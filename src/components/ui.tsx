@@ -56,7 +56,13 @@ export function Badge({ className, ...props }: React.HTMLAttributes<HTMLSpanElem
 }
 
 export function Button(
-  props: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'solid' | 'outline' | 'ghost' | 'danger' }
+  props: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    /**
+     * `default` is supported for backwards compatibility with earlier UI usage.
+     * It behaves the same as `solid`.
+     */
+    variant?: 'default' | 'solid' | 'outline' | 'ghost' | 'danger'
+  }
 ) {
   const v = props.variant ?? 'solid'
   const base =
@@ -69,7 +75,7 @@ export function Button(
   const danger = 'border border-red-900/60 bg-red-950/40 text-red-100 hover:bg-red-950/70'
   const cls = cn(
     base,
-    v === 'solid' ? solid : v === 'outline' ? outline : v === 'danger' ? danger : ghost,
+    v === 'solid' || v === 'default' ? solid : v === 'outline' ? outline : v === 'danger' ? danger : ghost,
     props.className
   )
   const { variant, ...rest } = props as any
