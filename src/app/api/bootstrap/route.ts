@@ -3,47 +3,36 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getDiscordId, getDiscordName } from '@/lib/rsi/discord'
 
-export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const code = url.searchParams.get('code')
+function json(data: any, status = 200) {
+  return NextResponse.json(data, { status })
+}
 
-  if (!code) {
-    return NextResponse.redirect(new URL('/login', url))
-  }
-
+// This endpoint allows a logged-in Discord user to "self-bootstrap" into the app
+// once an officer has accepted their recruit application.
+//
+// Why this exists:
+// - OAuth callback only runs on login.
+// - If the user is already signed in while waiting for approval, they shouldn't have
+//   to log in again once they get accepted.
+export async function POST() {
   const supabase = await createClient()
-  const { error } = await supabase.auth.exchangeCodeForSession(code)
-  if (error) {
-    return NextResponse.redirect(new URL('/login?error=oauth', url))
-  }
-
   const { data: userRes } = await supabase.auth.getUser()
   const user = userRes?.user
-  if (!user) {
-    return NextResponse.redirect(new URL('/login', url))
-  }
+  if (!user) return json({ loggedIn: false }, 200)
 
   const discordId = getDiscordId(user)
-  if (!discordId) {
-    // Keep the session (so the user can still apply), but tell them to apply manually.
-    return NextResponse.redirect(new URL('/join?reason=missing_discord_id', url))
-  }
+  if (!discordId) return json({ loggedIn: true, error: 'Missing Discord ID' }, 400)
 
   const admin = createAdminClient()
 
-  // Find our regiment
   const { data: regiment, error: regErr } = await admin
     .from('regiments')
     .select('id, slug')
     .eq('slug', 'rsi')
     .maybeSingle()
 
-  if (regErr || !regiment) {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/login?error=regiment', url))
-  }
+  if (regErr || !regiment) return json({ loggedIn: true, error: 'Regiment not found' }, 500)
 
-  // Check approval status
   const { data: appRow, error: appErr } = await admin
     .from('recruit_applications')
     .select('status, discord_name, timezone')
@@ -52,22 +41,13 @@ export async function GET(request: Request) {
     .order('created_at', { ascending: false })
     .maybeSingle()
 
-  if (appErr || !appRow) {
-    // No application yet — keep the user signed in and send them to the join form.
-    return NextResponse.redirect(new URL('/join?reason=apply_first', url))
-  }
+  if (appErr) return json({ loggedIn: true, error: appErr.message }, 400)
+  if (!appRow) return json({ loggedIn: true, status: 'none' }, 200)
 
-  if (appRow.status === 'rejected') {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(new URL('/denied', url))
-  }
+  if (appRow.status === 'rejected') return json({ loggedIn: true, status: 'rejected' }, 200)
+  if (appRow.status !== 'accepted') return json({ loggedIn: true, status: 'pending' }, 200)
 
-  if (appRow.status !== 'accepted') {
-    // Pending approval — keep session, but block /app via middleware.
-    return NextResponse.redirect(new URL('/pending', url))
-  }
-
-  // Approved: create profile + membership
+  // Accepted: ensure profile + membership exist.
   const displayName = appRow.discord_name ?? getDiscordName(user) ?? 'RSi Member'
 
   const bootstrapDiscord = process.env.RSI_BOOTSTRAP_DISCORD_ID
@@ -95,5 +75,5 @@ export async function GET(request: Request) {
     { onConflict: 'profile_id' }
   )
 
-  return NextResponse.redirect(new URL('/app', url))
+  return json({ loggedIn: true, status: 'accepted', bootstrapped: true }, 200)
 }
