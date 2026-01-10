@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* RSi Hub base look */
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  height: 100%;
+}
+
+::selection {
+  background: rgba(163, 230, 53, 0.25);
+}
+
+a { text-underline-offset: 4px; }
+
+.rsi-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0);
+  background-size: 28px 28px;
+}
