@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireMembership } from '@/lib/rsi/session'
 import { atLeast, type Role } from '@/lib/rsi/roles'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui'
+import { Card, CardHeader, CardTitle, CardContent, A } from '@/components/ui'
 import ItemsClient from './items-client'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,11 @@ export default async function ItemsAdminPage() {
             Current items in DB: <span className="text-neutral-200">{count ?? 0}</span>
           </div>
           <div className="text-xs text-neutral-500">
-            Source URL: <span className="font-mono">{process.env.FOXHOLE_ITEM_API_URL || 'https://foxholelogi.com/api/v1/items'}</span>
+            Source URL:{' '}
+            <span className="font-mono">{process.env.FOXHOLE_ITEM_API_URL || 'https://foxholelogi.com/assets/foxhole.json'}</span>
+          </div>
+          <div className="text-sm">
+            <A href="/app/tools/calculator">Open cost calculator</A>
           </div>
         </CardContent>
       </Card>

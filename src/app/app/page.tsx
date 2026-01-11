@@ -50,6 +50,9 @@ export default async function AppHome() {
             <div>• Create production order</div>
             <div>• Fill a container for yard</div>
             <div>• Create shipping order</div>
+            <div className="pt-2">
+              <A href="/app/tools/calculator">Open cost calculator</A>
+            </div>
           </CardContent>
         </Card>
 
@@ -63,6 +66,29 @@ export default async function AppHome() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="text-sm text-neutral-400">Data</div>
+          <div className="text-xl font-semibold">FoxholeLogi integration</div>
+        </CardHeader>
+        <CardContent className="text-sm text-neutral-300">
+          Items + costs are synced from FoxholeLogi’s dataset. You can use the built-in calculator, or open the
+          original tool for reference.
+
+          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+            <A href="/app/tools/calculator">Calculator</A>
+            <a
+              className="text-lime-200 hover:text-lime-100 underline underline-offset-4 decoration-lime-200/40 hover:decoration-lime-200/80"
+              href="https://foxholelogi.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open FoxholeLogi
+            </a>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

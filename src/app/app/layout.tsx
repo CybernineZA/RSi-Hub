@@ -8,6 +8,7 @@ import { requireMembership } from '@/lib/rsi/session'
 const NAV = [
   { href: '/app', label: 'Dashboard' },
   { href: '/app/orders/production', label: 'Production' },
+  { href: '/app/tools/calculator', label: 'Cost Calculator' },
   { href: '/app/yard', label: 'Container Yard' },
   { href: '/app/shipping', label: 'Shipping' },
   { href: '/app/war', label: 'War Overview' },
