@@ -69,33 +69,6 @@ export default async function WarOverviewPage() {
     else estItems += done
   }
 
-  // Completed production (archived orders)
-  let prodCrates = 0
-  let prodVehicles = 0
-  let prodEstItems = 0
-
-  const { data: prodLines, error: pErr } = await supabase
-    .from('archived_order_items')
-    .select('qty_required, items(unit, crate_size), archived_orders!inner(war_id)')
-    .eq('archived_orders.war_id', warId)
-
-  if (!pErr) {
-    for (const row of prodLines ?? []) {
-      const qty = Number((row as any).qty_required ?? 0)
-      const unit = String((row as any).items?.unit ?? 'crate')
-      const crateSize = (row as any).items?.crate_size ? Number((row as any).items?.crate_size) : null
-
-      if (unit === 'vehicle') prodVehicles += qty
-      else if (unit === 'item') {
-        // We don't currently store loose item quantities from production in a reliable way; treat as items.
-        prodEstItems += qty
-      } else {
-        prodCrates += qty
-        prodEstItems += crateSize ? qty * crateSize : qty
-      }
-    }
-  }
-
   const { data: shipments } = await supabase
     .from('shipments')
     .select('id, status, created_at, arrived_at, to_location:to_location_id(id,name,region,type)')
@@ -199,36 +172,6 @@ export default async function WarOverviewPage() {
           <CardContent className="text-3xl font-semibold">{estItems}</CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader className="flex flex-col gap-1">
-          <CardTitle>Production completed</CardTitle>
-          <div className="text-xs text-neutral-500">
-            Totals from archived production orders. These are separate from deliveries (you may later ship produced crates).
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
-              <div className="text-sm text-neutral-400">Crates produced</div>
-              <div className="mt-2 text-3xl font-semibold">{prodCrates}</div>
-            </div>
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
-              <div className="text-sm text-neutral-400">Vehicles produced</div>
-              <div className="mt-2 text-3xl font-semibold">{prodVehicles}</div>
-            </div>
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
-              <div className="text-sm text-neutral-400">Estimated items produced</div>
-              <div className="mt-2 text-3xl font-semibold">{prodEstItems}</div>
-            </div>
-          </div>
-          {pErr ? (
-            <div className="mt-3 text-xs text-neutral-500">
-              Note: archived production tables not found yet. Run Supabase migration 0005 to enable production archiving.
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader className="flex flex-col gap-1">

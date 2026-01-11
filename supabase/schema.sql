@@ -47,7 +47,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type shipment_status as enum ('open','in_transit','complete','cancelled');
+  create type shipment_status as enum ('open','loading','in_transit','arrived','unloaded','complete','aborted','cancelled');
 exception when duplicate_object then null; end $$;
 
 do $$ begin
