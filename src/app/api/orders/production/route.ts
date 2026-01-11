@@ -9,6 +9,8 @@ function json(data: any, status = 200) {
 
 type Line = { item_id: string; qty_required: number }
 
+type ItemSlot = { id: string; slot_count: number | null }
+
 function normalizeLines(raw: any): Line[] {
   const list = Array.isArray(raw) ? raw : []
   const tmp: Line[] = []
@@ -52,6 +54,34 @@ export async function POST(request: Request) {
     if (!yard_id) return json({ error: 'Missing yard_id' }, 400)
     if (!label) return json({ error: 'Missing container label' }, 400)
 
+    // Enforce 60-slot capacity (vehicles count as slots too). Slot usage comes from items.slot_count (defaults to 1).
+    const itemIds = Array.from(new Set(lines.map((l) => l.item_id)))
+    const { data: itemSlots, error: sErr } = await supabase
+      .from('items')
+      .select('id, slot_count')
+      .in('id', itemIds)
+
+    if (sErr) return json({ error: sErr.message }, 400)
+    const slotMap = new Map<string, number>()
+    for (const it of (itemSlots ?? []) as ItemSlot[]) slotMap.set(it.id, Math.max(1, Number(it.slot_count ?? 1)))
+
+    // Validate all ids exist
+    for (const id of itemIds) {
+      if (!slotMap.has(id)) return json({ error: `Unknown item_id: ${id}` }, 400)
+    }
+
+    const totalSlots = lines.reduce((sum, l) => sum + l.qty_required * (slotMap.get(l.item_id) ?? 1), 0)
+    if (totalSlots > 60) {
+      return json(
+        {
+          error: `Container over capacity: ${totalSlots}/60 crates. Reduce quantities to 60 or less.`,
+          totalSlots,
+          maxSlots: 60,
+        },
+        400
+      )
+    }
+
     const { data: container, error: cErr } = await supabase
       .from('containers')
       .insert({
@@ -74,7 +104,7 @@ export async function POST(request: Request) {
         item_id: l.item_id,
         qty_required: l.qty_required,
         qty_done: 0,
-        slot_count: 1,
+        slot_count: slotMap.get(l.item_id) ?? 1,
       }))
     )
 

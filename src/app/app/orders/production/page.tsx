@@ -33,14 +33,16 @@ export default async function ProductionOrdersPage() {
 
   const { data: items } = await supabase
     .from('items')
-    .select('id, name, category, unit, crate_size')
+    .select('id, slug, name, category, unit, crate_size, slot_count, meta')
     .order('category', { ascending: true })
     .order('name', { ascending: true })
 
   const { data: orders } = activeWarId
     ? await supabase
         .from('orders')
-        .select('id, title, status, created_at, order_items(id, qty_required, qty_done, items(name, unit, category))')
+        .select(
+          'id, order_no, title, status, created_at, order_items(id, qty_required, qty_done, items(id, slug, name, unit, category, crate_size, slot_count, meta))'
+        )
         .eq('war_id', activeWarId)
         .eq('type', 'production')
         .order('created_at', { ascending: false })
@@ -50,7 +52,9 @@ export default async function ProductionOrdersPage() {
   const { data: containers } = activeWarId
     ? await supabase
         .from('containers')
-        .select('id, label, state, current_slots, max_slots, created_at, container_items(id, qty_required, qty_done, slot_count, items(name, unit, category))')
+        .select(
+          'id, label, state, current_slots, max_slots, created_at, container_items(id, qty_required, qty_done, slot_count, items(id, slug, name, unit, category, crate_size, slot_count, meta))'
+        )
         .eq('war_id', activeWarId)
         .in('state', ['filling', 'ready'])
         .order('created_at', { ascending: false })

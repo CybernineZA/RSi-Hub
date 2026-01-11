@@ -39,7 +39,7 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type order_status as enum ('open','in_progress','complete','cancelled');
+  create type order_status as enum ('open','in_progress','ready','complete','cancelled');
 exception when duplicate_object then null; end $$;
 
 do $$ begin
